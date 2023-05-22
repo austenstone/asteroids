@@ -149,9 +149,36 @@ const checkCollisions = () => {
 }
 
 const keyState = {};
+const touchState = {
+  left: false,
+  right: false,
+  up: false,
+  down: false
+};
 // implement onkeydown
 document.addEventListener("keydown", (e) => keyState[e.key] = true);
 document.addEventListener("keyup", (e) => keyState[e.key] = false);
+const computeTouch = (touchX, touchY, state) => {
+  if (touchX < window.innerWidth / 2) {
+    touchState.left = state;
+  } else {
+    touchState.right = state;
+  }
+  if (touchY < window.innerHeight / 2) {
+    touchState.up = state;
+  } else {
+    touchState.down = state;
+  }
+}
+document.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  computeTouch(e.touches[0]?.clientX, e.touches[0]?.clientY, true);
+});
+document.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  computeTouch(e.touches[0]?.clientX, e.touches[0]?.clientY, false);
+});
+
 
 const bulletSpeed = 0.5
 let lastShot = 0;
@@ -170,7 +197,7 @@ const handleKeyboardInput = () => {
     bullets.push(bullet);
   }
 
-  if (keyState["ArrowUp"]) {
+  if (keyState["ArrowUp"] || touchState.up) {
     spaceshipVelocity.x += spaceshipSpeed * Math.sin(-spaceship.rotation.z);
     spaceshipVelocity.y += spaceshipSpeed * Math.cos(-spaceship.rotation.z);
     if (!thrustSound.isPlaying) thrustSound.play();
@@ -179,13 +206,15 @@ const handleKeyboardInput = () => {
     thrustSound.setLoop( false );
   }
   
-  if (keyState["ArrowDown"]) {
+  if (keyState["ArrowDown"] || touchState.down) {
     spaceshipVelocity.multiplyScalar(0.95);
   }
 
-  if (keyState["ArrowLeft"]) {
+  if (keyState["ArrowLeft"] || touchState.left) {
     spaceship.rotation.z += 0.05;
-  } else if (keyState["ArrowRight"]) {
+  }
+
+  if (keyState["ArrowRight"] || touchState.right) {
     spaceship.rotation.z -= 0.05;
   }
 }
