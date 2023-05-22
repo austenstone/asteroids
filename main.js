@@ -81,14 +81,21 @@ const spaceshipSpeed = 0.025;
 const spaceshipMaxSpeed = 0.1; // Set the maximum speed to 0.1
 const spaceshipVelocity = new THREE.Vector3();
 
-const asteroidInterval = 500;
+const thrusterGeometry = new THREE.ConeGeometry(0.2, 0.5, 8);
+const thrusterMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+const thruster = new THREE.Mesh(thrusterGeometry, thrusterMaterial);
+thruster.position.set(0, -1, 0);
+spaceship.add(thruster);
+
+let asteroidInterval = 500;
 const asteroidSize = 5;
 const asteroidSpeed = 0.015;
 const asteroids = [];
 const createAsteroid = () => {
   const asteroidGeometry = new THREE.SphereGeometry(asteroidSize, 5, 5);
-  const asteroidMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-  const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
+  const asteroidEdges = new THREE.EdgesGeometry(asteroidGeometry);
+  const asteroidMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+  const asteroid = new THREE.LineSegments(asteroidEdges, asteroidMaterial);
 
   // Generate a random point outside the camera frustum
   const frustum = new THREE.Frustum();
@@ -103,7 +110,6 @@ const createAsteroid = () => {
       Math.random() * frustumSize * (Math.random() > 0.5 ? 1 : -1),
       0
     );
-    console.log(point);
   } while (frustum.containsPoint(point));
   point.x -= asteroidSize * 2;
   point.y -= asteroidSize * 2;
@@ -175,12 +181,12 @@ const checkCollisions = () => {
         asteroids.splice(asteroids.indexOf(asteroid), 1);
         bullets.splice(bullets.indexOf(bullet), 1);
         score += 1;
-        console.log('score!', score)
       }
     });
   });
 }
 
+const rotationSpeed = 0.025;
 const bulletSpeed = 0.5
 let lastShot = 0;
 const handleKeyboardInput = () => {
@@ -196,31 +202,32 @@ const handleKeyboardInput = () => {
       Math.cos(-spaceship.rotation.z),
       0
     ).multiplyScalar(bulletSpeed);
-
     fireSound.play();
     scene.add(bullet);
     bullets.push(bullet);
   }
 
-  if (keyState["ArrowUp"] || touchState.up) {
+  if (keyState["ArrowUp"] || keyState["w"] || touchState.up) {
     spaceshipVelocity.x += spaceshipSpeed * Math.sin(-spaceship.rotation.z);
     spaceshipVelocity.y += spaceshipSpeed * Math.cos(-spaceship.rotation.z);
     if (!thrustSound.isPlaying) thrustSound.play();
     thrustSound.setLoop(true);
+    spaceship.add(thruster);
   } else {
     thrustSound.setLoop(false);
+    spaceship.remove(thruster);
   }
 
-  if (keyState["ArrowDown"] || touchState.down) {
+  if (keyState["ArrowDown"] || keyState["s"] || touchState.down) {
     spaceshipVelocity.multiplyScalar(0.95);
   }
 
-  if (keyState["ArrowLeft"] || touchState.left) {
-    spaceship.rotation.z += 0.05;
+  if (keyState["ArrowLeft"] || keyState["a"] || touchState.left) {
+    spaceship.rotation.z += rotationSpeed;
   }
 
-  if (keyState["ArrowRight"] || touchState.right) {
-    spaceship.rotation.z -= 0.05;
+  if (keyState["ArrowRight"] || keyState["d"] || touchState.right) {
+    spaceship.rotation.z -= rotationSpeed;
   }
 }
 
@@ -235,12 +242,14 @@ const gameOver = () => {
   spaceshipVelocity.set(0, 0, 0);
   spaceship.rotation.set(0, 0, 0);
   alert('Game over!');
+  asteroidInterval = 500;
 }
 
 const updateScore = () => {
   scoreElement.innerHTML = score;
 }
 
+setInterval(() => asteroidInterval = Math.floor(asteroidInterval * 0.95), 5000);
 // Render the scene and update the game state every frame
 const animate = () => {
   requestAnimationFrame(animate);
@@ -250,7 +259,9 @@ const animate = () => {
   } else {
     infoText.innerHTML = '';
   }
-  if (frames % asteroidInterval === 0) createAsteroid();
+  if (frames % asteroidInterval === 0) {
+    createAsteroid();
+  }
   handleKeyboardInput();
   updatePositions();
   checkCollisions();

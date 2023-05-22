@@ -2,10 +2,18 @@
     caret-color: transparent;
 }
 
-body {
+html, body {
+    width: 100%;
+    height: 100%;
+    background: black;
     margin: 0;
     padding: 0;
     overflow: hidden;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
 }
 
 .score {
