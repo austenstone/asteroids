@@ -172,11 +172,11 @@ const computeTouch = (touchX, touchY, state) => {
 }
 document.addEventListener('touchstart', (e) => {
   e.preventDefault();
-  computeTouch(e.touches[0]?.clientX, e.touches[0]?.clientY, true);
+  e.touches.forEach(touch => computeTouch(touch.clientX, touch.clientY, true));
 });
 document.addEventListener('touchend', (e) => {
   e.preventDefault();
-  computeTouch(e.touches[0]?.clientX, e.touches[0]?.clientY, false);
+  e.touches.forEach(touch => computeTouch(touch.clientX, touch.clientY, false));
 });
 
 
