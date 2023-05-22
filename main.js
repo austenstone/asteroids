@@ -1,18 +1,10 @@
-// Set up the scene, camera, and renderer
 const scene = new THREE.Scene();
+
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 0, 20); // Set the camera position to (0, 0, 10)
-camera.lookAt(scene.position); // Point the camera at the center of the scene
+camera.position.set(0, 0, 20);
+camera.lookAt(scene.position);
 const listener = new THREE.AudioListener();
 camera.add(listener);
-const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#game-canvas") });
-renderer.setSize(window.innerWidth, window.innerHeight);
-
-// create score
-let score = 0;
-const scoreElement = document.getElementById("score");
-
-// Add sound effects and music to the game using Three.js's audio capabilities
 const fireSound = new THREE.Audio(listener);
 const thrustSound = new THREE.Audio(listener);
 const bangSmallSound = new THREE.Audio(listener);
@@ -27,14 +19,58 @@ audioLoader.load("sounds/beat1.wav", (buffer) => beat1Sound.setBuffer(buffer));
 audioLoader.load("sounds/fire.wav", (buffer) => fireSound.setBuffer(buffer));
 audioLoader.load("sounds/thrust.wav", (buffer) => thrustSound.setBuffer(buffer));
 
+const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector("#game-canvas") });
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+let frames = 0;
+let score = 0;
+const scoreElement = document.getElementById("score");
+const infoText = document.getElementById('info-text');
+const keyState = {};
+const touchState = {
+  left: false,
+  right: false,
+  up: false,
+  down: false
+};
+
+document.addEventListener("keydown", (e) => keyState[e.key] = true);
+document.addEventListener("keyup", (e) => keyState[e.key] = false);
+const computeTouch = (touchX, touchY, state) => {
+  if (touchX < window.innerWidth / 2) {
+    touchState.left = state;
+  } else {
+    touchState.right = state;
+  }
+  if (touchY < window.innerHeight / 2) {
+    touchState.up = state;
+  } else {
+    touchState.down = state;
+  }
+}
+document.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touches = e.touches;
+  for (let i = 0; i < touches.length; i++) {
+    computeTouch(touches[i].clientX, touches[i].clientY, true);
+  }
+}, {passive: false});
+
+document.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touches = e.touches;
+  for (let i = 0; i < touches.length; i++) {
+    computeTouch(touches[i].clientX, touches[i].clientY, false);
+  }
+}, {passive: false});
+
 // Create the spaceship model and add it to the scene
 const spaceshipGeometry = new THREE.BufferGeometry();
-const vertices = new Float32Array([
+spaceshipGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
   0, 1, 0,
   -0.5, -0.5, 0,
   0.5, -0.5, 0
-]);
-spaceshipGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+]), 3));
 spaceshipGeometry.setIndex([0, 1, 2]);
 spaceshipGeometry.computeVertexNormals();
 const spaceshipMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -114,7 +150,7 @@ const checkCollisions = () => {
     if (!asteroidGeometry.boundingSphere.radius) return;
     const asteroidRadius = asteroidGeometry.boundingSphere.radius;
     const distance = asteroid.position.distanceTo(spaceship.position);
-    
+
     const spaceshipGeometry = spaceship.geometry;
     spaceshipGeometry.computeBoundingSphere();
     if (distance < asteroidRadius + spaceshipGeometry.boundingSphere.radius) {
@@ -123,9 +159,6 @@ const checkCollisions = () => {
       gameOver();
     }
   });
-  // if (distance1 < 1 || distance2 < 1) {
-  //   // Game over logic goes here
-  // }
   asteroids.forEach(asteroid => {
     const asteroidGeometry = asteroid.geometry;
     asteroidGeometry.computeBoundingSphere();
@@ -135,7 +168,7 @@ const checkCollisions = () => {
       bulletGeometry.computeBoundingSphere();
       const bulletRadius = bulletGeometry.boundingSphere.radius;
       const distance = bullet.position.distanceTo(asteroid.position);
-      if (distance < asteroidRadius + bulletRadius) {     
+      if (distance < asteroidRadius + bulletRadius) {
         beat1Sound.play();
         scene.remove(asteroid);
         scene.remove(bullet);
@@ -148,41 +181,9 @@ const checkCollisions = () => {
   });
 }
 
-const keyState = {};
-const touchState = {
-  left: false,
-  right: false,
-  up: false,
-  down: false
-};
-// implement onkeydown
-document.addEventListener("keydown", (e) => keyState[e.key] = true);
-document.addEventListener("keyup", (e) => keyState[e.key] = false);
-const computeTouch = (touchX, touchY, state) => {
-  if (touchX < window.innerWidth / 2) {
-    touchState.left = state;
-  } else {
-    touchState.right = state;
-  }
-  if (touchY < window.innerHeight / 2) {
-    touchState.up = state;
-  } else {
-    touchState.down = state;
-  }
-}
-document.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  e.touches.forEach(touch => computeTouch(touch.clientX, touch.clientY, true));
-});
-document.addEventListener('touchend', (e) => {
-  e.preventDefault();
-  e.touches.forEach(touch => computeTouch(touch.clientX, touch.clientY, false));
-});
-
-
 const bulletSpeed = 0.5
 let lastShot = 0;
-const handleKeyboardInput = () => {  
+const handleKeyboardInput = () => {
   if (keyState[" "] && frames - lastShot > 60) {
     lastShot = frames;
     const bulletGeometry = new THREE.SphereGeometry(0.1, 8, 8);
@@ -190,7 +191,11 @@ const handleKeyboardInput = () => {
     const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
     bullet.position.copy(spaceship.position);
     bullet.quaternion.copy(spaceship.quaternion);
-    bullet.velocity = new THREE.Vector3(Math.sin(-spaceship.rotation.z), Math.cos(-spaceship.rotation.z), 0).multiplyScalar(bulletSpeed);
+    bullet.velocity = new THREE.Vector3(
+      Math.sin(-spaceship.rotation.z),
+      Math.cos(-spaceship.rotation.z),
+      0
+    ).multiplyScalar(bulletSpeed);
 
     fireSound.play();
     scene.add(bullet);
@@ -201,11 +206,11 @@ const handleKeyboardInput = () => {
     spaceshipVelocity.x += spaceshipSpeed * Math.sin(-spaceship.rotation.z);
     spaceshipVelocity.y += spaceshipSpeed * Math.cos(-spaceship.rotation.z);
     if (!thrustSound.isPlaying) thrustSound.play();
-    thrustSound.setLoop( true );
+    thrustSound.setLoop(true);
   } else {
-    thrustSound.setLoop( false );
+    thrustSound.setLoop(false);
   }
-  
+
   if (keyState["ArrowDown"] || touchState.down) {
     spaceshipVelocity.multiplyScalar(0.95);
   }
@@ -236,9 +241,6 @@ const updateScore = () => {
   scoreElement.innerHTML = score;
 }
 
-let frames = 0;
-
-const infoText = document.getElementById('info-text');
 // Render the scene and update the game state every frame
 const animate = () => {
   requestAnimationFrame(animate);
