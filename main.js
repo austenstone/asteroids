@@ -192,11 +192,19 @@ const checkCollisions = () => {
         if (asteroid.size === asteroidSmallSize) {
           score += 1;
         } if (asteroid.size === asteroidMediumSize) {
-          createAsteroid(asteroidSmallSize, asteroid.position.x + 1, asteroid.position.y + 1, asteroid.position.z, asteroid.velocity);
-          createAsteroid(asteroidSmallSize, asteroid.position.x - 1, asteroid.position.y - 1, asteroid.position.z, asteroid.velocity);
+          let randomPositionX = asteroid.position.x + 1 + Math.random();
+          let randomPositionY = asteroid.position.y + 1 + Math.random();
+          createAsteroid(asteroidSmallSize, randomPositionX, randomPositionY, asteroid.position.z, asteroid.velocity);
+          randomPositionX = asteroid.position.x - 1 - Math.random();
+          randomPositionY = asteroid.position.y - 1 - Math.random();
+          createAsteroid(asteroidSmallSize, randomPositionX, randomPositionY, asteroid.position.z, asteroid.velocity);
         } else if (asteroid.size === asteroidLargeSize) {
-          createAsteroid(asteroidMediumSize, asteroid.position.x + 1, asteroid.position.y + 1, asteroid.position.z, asteroid.velocity);
-          createAsteroid(asteroidMediumSize, asteroid.position.x - 1, asteroid.position.y - 1, asteroid.position.z, asteroid.velocity);
+          let randomPositionX = asteroid.position.x + 1 + Math.random();
+          let randomPositionY = asteroid.position.y + 1 + Math.random();
+          createAsteroid(asteroidMediumSize, randomPositionX, randomPositionY, asteroid.position.z, asteroid.velocity);
+          randomPositionX = asteroid.position.x - 1 - Math.random();
+          randomPositionY = asteroid.position.y - 1 - Math.random();
+          createAsteroid(asteroidMediumSize, randomPositionX, randomPositionY, asteroid.position.z, asteroid.velocity);
         }
         console.log(radiusFloor, asteroidLargeSize)
       }
