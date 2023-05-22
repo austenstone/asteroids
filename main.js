@@ -88,40 +88,48 @@ thruster.position.set(0, -1, 0);
 spaceship.add(thruster);
 
 let asteroidInterval = 500;
-const asteroidSize = 5;
+const asteroidLargeSize = 5;
+const asteroidMediumSize = 3.5;
+const asteroidSmallSize = 1;
 const asteroidSpeed = 0.015;
 const asteroids = [];
-const createAsteroid = () => {
-  const asteroidGeometry = new THREE.SphereGeometry(asteroidSize, 5, 5);
+const createAsteroid = (size, x, y, z, velocity) => {
+  const asteroidGeometry = new THREE.SphereGeometry(size, 5, 5);
   const asteroidEdges = new THREE.EdgesGeometry(asteroidGeometry);
   const asteroidMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
   const asteroid = new THREE.LineSegments(asteroidEdges, asteroidMaterial);
 
-  // Generate a random point outside the camera frustum
-  const frustum = new THREE.Frustum();
-  const cameraViewProjectionMatrix = new THREE.Matrix4();
-  cameraViewProjectionMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-  frustum.setFromProjectionMatrix(cameraViewProjectionMatrix);
-  const frustumSize = 50;
-  const point = new THREE.Vector3();
-  do {
-    point.set(
-      Math.random() * frustumSize * (Math.random() > 0.5 ? 1 : -1),
-      Math.random() * frustumSize * (Math.random() > 0.5 ? 1 : -1),
-      0
-    );
-  } while (frustum.containsPoint(point));
-  point.x -= asteroidSize * 2;
-  point.y -= asteroidSize * 2;
-
+  let point;
+  if (!x || !y || !z) {
+    const frustum = new THREE.Frustum();
+    const cameraViewProjectionMatrix = new THREE.Matrix4();
+    cameraViewProjectionMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(cameraViewProjectionMatrix);
+    const frustumSize = 50;
+    point = new THREE.Vector3();
+    do {
+      point.set(
+        Math.random() * frustumSize * (Math.random() > 0.5 ? 1 : -1),
+        Math.random() * frustumSize * (Math.random() > 0.5 ? 1 : -1),
+        0
+      );
+    } while (frustum.containsPoint(point));
+    point.x -= size * 2;
+    point.y -= size * 2;
+  } else {
+    point = new THREE.Vector3(x, y, z);
+  }
   asteroid.position.copy(point);
   asteroid.position.z = spaceship.position.z;
+  asteroid.size = size;
 
-  // Set the asteroid's velocity to be a vector pointing towards the spaceship
-  const direction = new THREE.Vector3();
-  direction.subVectors(spaceship.position, asteroid.position).normalize();
-  asteroid.velocity = direction.multiplyScalar(asteroidSpeed).setZ(0); // Set the z-component of the velocity to 0
-
+  if (velocity) {
+    asteroid.velocity = velocity;
+  } else {
+    const direction = new THREE.Vector3();
+    direction.subVectors(spaceship.position, asteroid.position).normalize();
+    asteroid.velocity = direction.multiplyScalar(asteroidSpeed).setZ(0); // Set the z-component of the velocity to 0  
+  }
   scene.add(asteroid);
   asteroids.push(asteroid);
 }
@@ -180,7 +188,17 @@ const checkCollisions = () => {
         scene.remove(bullet);
         asteroids.splice(asteroids.indexOf(asteroid), 1);
         bullets.splice(bullets.indexOf(bullet), 1);
-        score += 1;
+        const radiusFloor = Math.floor(asteroidRadius);
+        if (asteroid.size === asteroidSmallSize) {
+          score += 1;
+        } if (asteroid.size === asteroidMediumSize) {
+          createAsteroid(asteroidSmallSize, asteroid.position.x + 1, asteroid.position.y + 1, asteroid.position.z, asteroid.velocity);
+          createAsteroid(asteroidSmallSize, asteroid.position.x - 1, asteroid.position.y - 1, asteroid.position.z, asteroid.velocity);
+        } else if (asteroid.size === asteroidLargeSize) {
+          createAsteroid(asteroidMediumSize, asteroid.position.x + 1, asteroid.position.y + 1, asteroid.position.z, asteroid.velocity);
+          createAsteroid(asteroidMediumSize, asteroid.position.x - 1, asteroid.position.y - 1, asteroid.position.z, asteroid.velocity);
+        }
+        console.log(radiusFloor, asteroidLargeSize)
       }
     });
   });
@@ -260,7 +278,15 @@ const animate = () => {
     infoText.innerHTML = '';
   }
   if (frames % asteroidInterval === 0) {
-    createAsteroid();
+    const random = Math.random();
+    console.log(random)
+    if (random > 0.7) {
+      createAsteroid(asteroidLargeSize);
+    } else if (random > 0.3) {
+      createAsteroid(asteroidMediumSize);
+    } else if (random > 0) {
+      createAsteroid(asteroidSmallSize);
+    }
   }
   handleKeyboardInput();
   updatePositions();
