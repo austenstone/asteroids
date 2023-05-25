@@ -1,2 +1,1 @@
-# asteroids
-asteroids video game in JS
+### [PLAY](https://austenstone.github.io/asteroids/)
